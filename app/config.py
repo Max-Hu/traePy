@@ -1,5 +1,6 @@
 import os
-from pydantic import BaseSettings
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Application settings
@@ -22,8 +23,9 @@ class Settings(BaseSettings):
     JENKINS_USER: str = os.getenv("JENKINS_USER", "maxhu")
     JENKINS_TOKEN: str = os.getenv("JENKINS_TOKEN", "11d5f70116f1e97c95b2471aef26c2a1c9")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
 
 settings = Settings()
