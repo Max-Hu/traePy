@@ -10,7 +10,7 @@ graphene==3.2.2
 strawberry-graphql>=0.220.0,<0.221.0
 
 # 数据库驱动
-cx-Oracle==8.3.0
+oracledb>=1.4.0,<2.0.0
 
 # HTTP客户端
 requests>=2.31.0,<3.0.0

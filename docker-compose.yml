@@ -18,7 +18,7 @@ services:
       - ORACLE_PORT=1521
       - ORACLE_SERVICE=XEPDB1
       - JENKINS_URL=http://jenkins:8080
-      - JENKINS_USER=admin
+      - JENKINS_USER=maxhu
       - JENKINS_TOKEN=11d5f70116f1e97c95b2471aef26c2a1c9
     depends_on:
       - oracle

@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import cx_Oracle
+import oracledb
 
 from app.services.oracle_service import OracleService
 
@@ -11,7 +11,7 @@ class TestOracleService(unittest.TestCase):
         """Preparation work before testing"""
         self.oracle_service = OracleService()
     
-    @patch('cx_Oracle.connect')
+    @patch('oracledb.connect')
     def test_get_tables(self, mock_connect):
         """Test get table list functionality"""
         # Set up mock objects
@@ -37,7 +37,7 @@ class TestOracleService(unittest.TestCase):
         mock_cursor.close.assert_called_once()
         mock_connection.close.assert_called_once()
     
-    @patch('cx_Oracle.connect')
+    @patch('oracledb.connect')
     def test_get_table_data(self, mock_connect):
         """Test get table data functionality"""
         # Set up mock objects
@@ -71,7 +71,7 @@ class TestOracleService(unittest.TestCase):
         mock_cursor.close.assert_called_once()
         mock_connection.close.assert_called_once()
     
-    @patch('cx_Oracle.connect')
+    @patch('oracledb.connect')
     def test_execute_query(self, mock_connect):
         """Test execute custom query functionality"""
         # Set up mock objects
@@ -103,12 +103,11 @@ class TestOracleService(unittest.TestCase):
         mock_cursor.close.assert_called_once()
         mock_connection.close.assert_called_once()
     
-    @patch('cx_Oracle.connect')
+    @patch('oracledb.connect')
     def test_connection_error(self, mock_connect):
         """Test database connection error handling"""
         # Set up mock connection to throw exception
-        error = cx_Oracle.Error()
-        error.args = [MagicMock(message="Connection refused")]
+        error = oracledb.Error("Connection refused")
         mock_connect.side_effect = error
         
         # Verify exception is properly caught and handled

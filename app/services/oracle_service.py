@@ -1,4 +1,4 @@
-import cx_Oracle
+import oracledb
 from typing import List, Dict, Any
 from app.config import settings
 
@@ -7,16 +7,20 @@ class OracleService:
     
     def __init__(self):
         """Initialize Oracle service and set connection parameters"""
-        self.connection_string = f"{settings.ORACLE_USER}/{settings.ORACLE_PASSWORD}@{settings.ORACLE_HOST}:{settings.ORACLE_PORT}/{settings.ORACLE_SERVICE}"
+        # thin模式连接参数
+        self.dsn = f"{settings.ORACLE_HOST}:{settings.ORACLE_PORT}/{settings.ORACLE_SERVICE}"
     
     def _get_connection(self):
         """Get database connection"""
         try:
-            connection = cx_Oracle.connect(self.connection_string)
+            connection = oracledb.connect(
+                user=settings.ORACLE_USER,
+                password=settings.ORACLE_PASSWORD,
+                dsn=self.dsn
+            )
             return connection
-        except cx_Oracle.Error as e:
-            error, = e.args
-            raise Exception(f"Oracle connection error: {error.message}")
+        except oracledb.Error as e:
+            raise Exception(f"Oracle connection error: {str(e)}")
     
     def get_tables(self) -> List[str]:
         """Get all tables in the database"""
