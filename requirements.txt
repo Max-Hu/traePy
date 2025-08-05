@@ -1,0 +1,22 @@
+# Web框架
+fastapi==0.95.1
+uvicorn==0.22.0
+# starlette版本由fastapi自动管理
+pydantic==1.10.7
+
+# GraphQL支持
+graphene==3.2.2
+strawberry-graphql==0.183.6
+
+# 数据库驱动
+cx-Oracle==8.3.0
+
+# HTTP客户端
+requests==2.30.0
+
+# 测试工具
+pytest==7.3.1
+pytest-cov==4.1.0
+
+# 工具库
+python-dotenv==1.0.0

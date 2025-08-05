@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: traepy-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=true
+      - PORT=8000
+      - API_TOKEN=${API_TOKEN:-traepy-static-token}
+      - ORACLE_USER=system
+      - ORACLE_PASSWORD=oracle
+      - ORACLE_HOST=oracle
+      - ORACLE_PORT=1521
+      - ORACLE_SERVICE=XEPDB1
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_USER=admin
+      - JENKINS_TOKEN=11d5f70116f1e97c95b2471aef26c2a1c9
+    depends_on:
+      - oracle
+      - jenkins
+    networks:
+      - traepy-network
+
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: traepy-oracle
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=oracle
+      - ORACLE_DATABASE=XEPDB1
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - traepy-network
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    container_name: traepy-jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+    networks:
+      - traepy-network
+
+volumes:
+  oracle-data:
+  jenkins-data:
+
+networks:
+  traepy-network:
+    driver: bridge
