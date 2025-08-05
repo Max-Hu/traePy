@@ -1,6 +1,10 @@
 import requests
 from typing import List, Dict, Any, Optional
 from app.config import settings
+import urllib3
+
+# 禁用SSL警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class JenkinsService:
     """Jenkins service class providing methods for interacting with Jenkins server"""
@@ -16,7 +20,7 @@ class JenkinsService:
         try:
             # Use Jenkins API to get job list
             url = f"{self.jenkins_url}/api/json?tree=jobs[name,url,color]"
-            response = requests.get(url, auth=self.auth, headers=self.headers)
+            response = requests.get(url, auth=self.auth, headers=self.headers, verify=False)
             response.raise_for_status()
             
             data = response.json()
@@ -52,7 +56,7 @@ class JenkinsService:
         """Get detailed information of specified job"""
         try:
             url = f"{self.jenkins_url}/job/{job_name}/api/json"
-            response = requests.get(url, auth=self.auth, headers=self.headers)
+            response = requests.get(url, auth=self.auth, headers=self.headers, verify=False)
             response.raise_for_status()
             
             return response.json()
@@ -65,10 +69,10 @@ class JenkinsService:
             # If there are parameters, use parameterized build API
             if parameters:
                 url = f"{self.jenkins_url}/job/{job_name}/buildWithParameters"
-                response = requests.post(url, auth=self.auth, data=parameters)
+                response = requests.post(url, auth=self.auth, data=parameters, verify=False)
             else:
                 url = f"{self.jenkins_url}/job/{job_name}/build"
-                response = requests.post(url, auth=self.auth)
+                response = requests.post(url, auth=self.auth, verify=False)
             
             response.raise_for_status()
             
@@ -88,7 +92,7 @@ class JenkinsService:
                 time.sleep(1)  # Wait 1 second
                 
                 try:
-                    queue_response = requests.get(queue_url, auth=self.auth, headers=self.headers)
+                    queue_response = requests.get(queue_url, auth=self.auth, headers=self.headers, verify=False)
                     queue_response.raise_for_status()
                     queue_data = queue_response.json()
                     
@@ -108,7 +112,7 @@ class JenkinsService:
         """Get status of specified build"""
         try:
             url = f"{self.jenkins_url}/job/{job_name}/{build_number}/api/json"
-            response = requests.get(url, auth=self.auth, headers=self.headers)
+            response = requests.get(url, auth=self.auth, headers=self.headers, verify=False)
             response.raise_for_status()
             
             data = response.json()

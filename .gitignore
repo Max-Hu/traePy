@@ -158,6 +158,7 @@ cython_debug/
 #  project, it is recommended to ignore the entire .idea directory.
 .idea/
 max
+Dockerfile
 # VS Code
 .vscode/
 

@@ -1,0 +1,80 @@
+# 📘 Tech Stack Comparison: Python vs TypeScript for CI/CD Scan Trigger API Project
+
+## 🔧 Project Background
+
+This project provides an API backend to trigger Jenkins-based scanning pipelines (FOSS, SAST, DAST, etc.), collect real-time status and logs, store results (e.g., report URLs), and expose them via REST and/or GraphQL. It requires:
+- Easy maintenance
+- Developer-friendly APIs
+- Oracle DB support
+- Workflow engine integration (e.g., Temporal)
+- Secure API authentication (e.g., API Key)
+
+---
+
+## 🐍 Python Tech Stack (Option A)
+
+| Component        | Technology             |
+|------------------|-------------------------|
+| Web Framework    | FastAPI                 |
+| ORM              | SQLAlchemy + cx_Oracle  |
+| Typing & Schema  | Pydantic                |
+| Unit Testing     | pytest                  |
+| Workflow Engine  | Temporal Python SDK / Prefect / Argo (via API) |
+| Docs & Debugging | Swagger UI / ReDoc (auto from FastAPI) |
+| CI/CD Trigger    | requests or python-jenkins |
+| Containerization | Docker + docker-compose |
+
+---
+
+## 🟦 TypeScript Tech Stack (Option B)
+
+| Component        | Technology             |
+|------------------|-------------------------|
+| Web Framework    | NestJS (modular + decorator-based) |
+| ORM              | TypeORM / Prisma        |
+| Typing & Schema  | TypeScript (static types) |
+| GraphQL Support  | Apollo Server (built-in with NestJS) |
+| Unit Testing     | Jest                    |
+| Workflow Engine  | Temporal Node SDK / Argo |
+| Docs & Debugging | Swagger + GraphQL Playground |
+| CI/CD Trigger    | axios / node-jenkins-api |
+| Containerization | Docker + docker-compose |
+
+---
+
+## 📊 Comparison Table
+
+| Feature                     | Python (FastAPI)                      | TypeScript (NestJS + Apollo)             |
+|-----------------------------|---------------------------------------|------------------------------------------|
+| Ease of Adoption            | ✅ Very beginner-friendly              | ⚠️ Requires understanding of TS, DI, modules |
+| Developer Productivity      | ✅ Fast dev speed, fewer files         | ⚠️ Slower setup, better for large teams   |
+| Typing                      | ⚠️ Runtime via Pydantic                | ✅ Compile-time via TypeScript            |
+| REST API Support            | ✅ Native & auto-documented            | ✅ Strong REST support                    |
+| GraphQL Support             | ⚠️ Needs extra lib (Strawberry, etc.) | ✅ First-class support with Apollo        |
+| Oracle Compatibility        | ✅ Mature (cx_Oracle)                  | ⚠️ Prisma support still in progress       |
+| Workflow Engine Integration | ✅ Prefect, Temporal (Python SDK)      | ✅ Temporal (official Node SDK)           |
+| API Documentation           | ✅ Auto Swagger/Redoc                  | ✅ Swagger + GraphQL playground           |
+| API Contract Sharing        | ⚠️ Manual via OpenAPI schema           | ✅ TS types can be shared across FE/BE    |
+| Maintenance                 | ✅ Simple and modular                  | ✅ Modular, better for long-term scaling  |
+| Team Fit                    | ✅ Ideal for Python-first small teams  | ⚠️ Ideal for TS-first fullstack teams     |
+
+---
+
+## ✅ Recommendation
+
+| Option        | When to Choose                                                                 |
+|---------------|---------------------------------------------------------------------------------|
+| **Python A**  | ✅ Choose if your team is small, Python-savvy, and you prioritize fast delivery |
+| **TS B**      | ⚠️ Choose if you're planning for front-end type sharing and GraphQL-heavy APIs |
+
+---
+
+## 🔜 Next Steps
+
+- [ ] Choose preferred stack
+- [ ] Set up initial repo with Docker + compose
+- [ ] Scaffold REST/GraphQL endpoints
+- [ ] Define security (e.g., API key auth)
+- [ ] Integrate Jenkins trigger and callback APIs
+- [ ] Extend with workflow engine if needed
+
