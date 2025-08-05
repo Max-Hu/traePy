@@ -1,0 +1,41 @@
+{
+  "job_id": "abc123",
+  "pipeline_name": "scan-nexus",
+  "triggered_by": "UI",
+  "parameters": {
+    "nexusURL": "http://nexus.local/repo"
+  },
+  "env": "Dev",
+
+  "status": "running",
+  "progress_percent": 66,
+  "started_at": "2025-08-05T14:00:00Z",
+  "estimated_duration": 300000,
+  "duration": 150000,
+  "finished_at": null,
+
+  "log_tail": [
+    "Downloading dependencies...",
+    "Scanning files...",
+    "Upload results to SonarQube..."
+  ],
+  "console_log_url": "http://jenkins/job/abc123/console",
+
+  "result": {
+    "report_url": "http://sonarqube/report/abc123",
+    "artifact_urls": [
+      "http://nexus/repo/abc123.zip"
+    ],
+    "summary": "3 critical issues found, coverage 88.5%",
+    "metrics": {
+      "critical_issues": 3,
+      "high_issues": 5,
+      "coverage_percent": 88.5
+    }
+  },
+
+  "callback": {
+    "is_callback_received": false,
+    "callback_received_at": null
+  }
+}

@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
   title: CI/CD Scan Trigger API
-  version: 1.0.0
-  description: REST API for triggering Jenkins scan jobs and managing results
+  version: 1.0.2
+  description: REST API for triggering Jenkins scan jobs and retrieving custom job detail
 
 servers:
   - url: http://localhost:8000
@@ -13,6 +13,7 @@ components:
       type: apiKey
       in: header
       name: X-API-Token
+
   schemas:
     TriggerScanRequest:
       type: object
@@ -23,13 +24,11 @@ components:
           type: object
           additionalProperties:
             type: string
+
     TriggerScanResponse:
       type: object
-      properties:
-        job_id:
-          type: string
-        status:
-          type: string
+      additionalProperties: true
+
     CallbackRequest:
       type: object
       properties:
@@ -40,33 +39,16 @@ components:
         result:
           type: object
           additionalProperties: true
+
     SimpleResponse:
       type: object
       properties:
         message:
           type: string
-    JobStatusResponse:
+
+    JobDetailResponse:
       type: object
-      properties:
-        job_id:
-          type: string
-        status:
-          type: string
-    JobLogResponse:
-      type: object
-      properties:
-        job_id:
-          type: string
-        log:
-          type: string
-    JobResultResponse:
-      type: object
-      properties:
-        job_id:
-          type: string
-        result:
-          type: object
-          additionalProperties: true
+      additionalProperties: true
 
 security:
   - ApiKeyAuth: []
@@ -110,9 +92,9 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /api/scan/{job_id}/status:
+  /api/scan/{job_id}/detail:
     get:
-      summary: Get scan job status
+      summary: Get detailed scan job info including status, logs, and results
       parameters:
         - in: path
           name: job_id
@@ -121,48 +103,10 @@ paths:
             type: string
       responses:
         200:
-          description: Job status retrieved
+          description: Job detail returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobStatusResponse'
-      security:
-        - ApiKeyAuth: []
-
-  /api/scan/{job_id}/log:
-    get:
-      summary: Get Jenkins console log for a job
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Console log retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JobLogResponse'
-      security:
-        - ApiKeyAuth: []
-
-  /api/scan/{job_id}/result:
-    get:
-      summary: Get final scan result
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Scan result retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JobResultResponse'
+                $ref: '#/components/schemas/JobDetailResponse'
       security:
         - ApiKeyAuth: []
