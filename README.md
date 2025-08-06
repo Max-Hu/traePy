@@ -147,3 +147,14 @@ mutation {
 - Maintain test coverage for all service logic
 - Follow semantic versioning and modular service definitions
 - Ready for CI/CD pipeline integration
+
+BUILD_ARGS=$(cat .env | grep -v '^#' | xargs -I {} echo --build-arg {} | tr '\n' ' ')
+
+# 输出为类似于：--build-arg API_TOKEN=abc123 --build-arg BASE_URL=xxx ...
+
+/kaniko/executor \
+  --context . \
+  --dockerfile Dockerfile \
+  --destination my.registry/app:latest \
+  $BUILD_ARGS
+
