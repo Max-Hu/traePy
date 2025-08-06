@@ -1,15 +1,14 @@
-# Web框架
-fastapi==0.116.1
-uvicorn==0.31.1
-# starlette版本由fastapi自动管理
+# Web框架 - 使用版本范围而非固定版本
+fastapi>=0.116.0,<0.117.0
+uvicorn>=0.31.0,<0.32.0
 pydantic>=2.7.0,<3.0.0
 pydantic-settings>=2.0.0,<3.0.0
 
 # GraphQL支持
-graphene==3.2.2
+graphene>=3.2.0,<3.3.0
 strawberry-graphql>=0.220.0,<0.221.0
 
-# 数据库驱动
+# 数据库驱动 - 当前版本范围已经很好
 oracledb>=1.4.0,<2.0.0
 
 # HTTP客户端
@@ -20,4 +19,7 @@ pytest>=8.0.0,<9.0.0
 pytest-cov>=4.1.0,<6.0.0
 
 # 工具库
-python-dotenv==1.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# 确保 cryptography 包可用（解决之前的 DPY-3016 错误）
+cryptography>=3.4.8
