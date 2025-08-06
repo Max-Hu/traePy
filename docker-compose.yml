@@ -20,6 +20,11 @@ services:
       - JENKINS_URL=http://jenkins:8080
       - JENKINS_USER=maxhu
       - JENKINS_TOKEN=11d5f70116f1e97c95b2471aef26c2a1c9
+      # 日志配置
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_TO_FILE=${LOG_TO_FILE:-true}
+      - LOG_FILE=${LOG_FILE:-}
     depends_on:
       - oracle
       - jenkins

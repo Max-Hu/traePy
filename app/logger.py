@@ -33,8 +33,25 @@ def setup_logger(name: str = None) -> logging.Logger:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # 文件处理器
-    if settings.LOG_FILE:
+    # 文件处理器 - 根据环境和配置决定是否写入文件
+    if settings.LOG_TO_FILE and settings.ENVIRONMENT == "development":
+        # 开发环境默认日志文件路径
+        log_file = settings.LOG_FILE or "logs/traepy.log"
+        
+        # 确保日志目录存在
+        log_file_path = Path(log_file)
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # 使用RotatingFileHandler避免日志文件过大
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=5
+        )
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    elif settings.LOG_FILE:  # 如果明确指定了日志文件路径，则使用
         # 确保日志目录存在
         log_file_path = Path(settings.LOG_FILE)
         log_file_path.parent.mkdir(parents=True, exist_ok=True)

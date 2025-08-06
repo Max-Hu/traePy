@@ -27,7 +27,9 @@ class Settings(BaseSettings):
     # Logging settings
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    LOG_FILE: str = os.getenv("LOG_FILE", "logs/traepy.log")
+    LOG_FILE: str = os.getenv("LOG_FILE", "")
+    LOG_TO_FILE: bool = os.getenv("LOG_TO_FILE", "true").lower() == "true"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
     model_config = ConfigDict(
         env_file=".env",
