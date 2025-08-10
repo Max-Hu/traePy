@@ -21,5 +21,22 @@ pytest-cov>=4.1.0,<6.0.0
 # 工具库
 python-dotenv>=1.0.0,<2.0.0
 
+# JWT认证相关
+python-jose[cryptography]>=3.3.0,<4.0.0
+passlib[bcrypt]>=1.7.4,<2.0.0
+python-multipart>=0.0.6,<1.0.0
+
+# 数据库ORM
+sqlalchemy>=2.0.0,<3.0.0
+
+# 邮箱验证
+email-validator>=2.0.0,<3.0.0
+
+# 异步测试支持
+pytest-asyncio>=0.21.0,<1.0.0
+
+# HTTP测试客户端
+httpx>=0.25.0,<1.0.0
+
 # 确保 cryptography 包可用（解决之前的 DPY-3016 错误）
 cryptography>=3.4.8

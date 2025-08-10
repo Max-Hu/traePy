@@ -9,8 +9,13 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", True)
     PORT: int = int(os.getenv("PORT", 8000))
     
-    # API authentication settings
+    # API authentication settings (deprecated)
     API_TOKEN: str = os.getenv("API_TOKEN", "traepy-static-token")
+    
+    # JWT authentication settings
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 30))
     
     # Database settings
     ORACLE_USER: str = os.getenv("ORACLE_USER", "system")
@@ -20,7 +25,7 @@ class Settings(BaseSettings):
     ORACLE_SERVICE: str = os.getenv("ORACLE_SERVICE", "XEPDB1")
     
     # Jenkins settings
-    JENKINS_URL: str = os.getenv("JENKINS_URL", "http://localhost:8080")
+    JENKINS_URL: str = os.getenv("JENKINS_URL", "http://jenkins:8080")
     JENKINS_USER: str = os.getenv("JENKINS_USER", "maxhu")
     JENKINS_TOKEN: str = os.getenv("JENKINS_TOKEN", "11d5f70116f1e97c95b2471aef26c2a1c9")
     

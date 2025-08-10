@@ -1,33 +1,29 @@
 version: '3.8'
 
 services:
-  api:
+  # SQLite数据库 - 使用文件存储
+  app:
     build: .
-    container_name: traepy-api
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
     environment:
-      - DEBUG=true
-      - PORT=8000
-      - API_TOKEN=${API_TOKEN:-traepy-static-token}
-      - ORACLE_USER=system
-      - ORACLE_PASSWORD=oracle
-      - ORACLE_HOST=oracle
-      - ORACLE_PORT=1521
-      - ORACLE_SERVICE=XEPDB1
-      - JENKINS_URL=http://jenkins:8080
-      - JENKINS_USER=maxhu
-      - JENKINS_TOKEN=11d5f70116f1e97c95b2471aef26c2a1c9
-      # 日志配置
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_TO_FILE=${LOG_TO_FILE:-true}
-      - LOG_FILE=${LOG_FILE:-}
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///./app.db
+      - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       - oracle
       - jenkins
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data  # 持久化数据库文件
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - traepy-network
 

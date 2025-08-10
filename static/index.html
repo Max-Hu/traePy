@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TraePy Demo - JWT & WebSocket</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 90%;
+            max-width: 800px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        
+        .section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .status {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .messages {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+        }
+        
+        .message {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .message.sent {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .message.received {
+            background: #f3e5f5;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .task-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .task-status.pending { background: #fff3cd; color: #856404; }
+        .task-status.triggered { background: #cce5ff; color: #004085; }
+        .task-status.running { background: #d4edda; color: #155724; }
+        .task-status.completed { background: #d1ecf1; color: #0c5460; }
+        .task-status.failed { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TraePy Demo</h1>
+            <p>JWT认证 & WebSocket实时通信演示</p>
+        </div>
+        
+        <!-- 登录/注册区域 -->
+        <div id="authSection" class="section">
+            <h3>用户认证</h3>
+            <div id="authStatus"></div>
+            
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" placeholder="请输入密码">
+                </div>
+                <button class="btn" onclick="login()">登录</button>
+                <button class="btn btn-secondary" onclick="showRegister()">注册</button>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="regUsername">用户名:</label>
+                    <input type="text" id="regUsername" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">邮箱:</label>
+                    <input type="email" id="regEmail" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">密码:</label>
+                    <input type="password" id="regPassword" placeholder="请输入密码">
+                </div>
+                <button class="btn" onclick="register()">注册</button>
+                <button class="btn btn-secondary" onclick="showLogin()">返回登录</button>
+            </div>
+        </div>
+        
+        <!-- WebSocket连接区域 -->
+        <div id="websocketSection" class="section hidden">
+            <h3>WebSocket连接</h3>
+            <div id="wsStatus"></div>
+            <button id="wsConnectBtn" class="btn" onclick="connectWebSocket()">连接WebSocket</button>
+            <button id="wsDisconnectBtn" class="btn btn-secondary hidden" onclick="disconnectWebSocket()">断开连接</button>
+            
+            <div class="messages" id="messages"></div>
+            
+            <div class="form-group">
+                <label for="messageInput">发送消息:</label>
+                <input type="text" id="messageInput" placeholder="输入消息内容" onkeypress="handleMessageKeyPress(event)">
+                <button class="btn" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+        
+        <!-- 扫描任务区域 -->
+        <div id="scanSection" class="section hidden">
+            <h3>扫描任务</h3>
+            <div id="scanStatus"></div>
+            
+            <div class="form-group">
+                <label for="jobSelect">选择Jenkins任务:</label>
+                <select id="jobSelect">
+                    <option value="">请选择任务</option>
+                </select>
+                <button class="btn" onclick="loadJobs()">刷新任务列表</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="jobParams">任务参数 (JSON格式):</label>
+                <input type="text" id="jobParams" placeholder='{"param1": "value1"}'>
+            </div>
+            
+            <button class="btn" onclick="triggerScan()">触发扫描任务</button>
+            
+            <h4>我的任务</h4>
+            <div id="taskList"></div>
+            <button class="btn btn-secondary" onclick="loadTasks()">刷新任务列表</button>
+        </div>
+        
+        <!-- 用户信息区域 -->
+        <div id="userSection" class="section hidden">
+            <h3>用户信息</h3>
+            <div id="userInfo"></div>
+            <button class="btn btn-secondary" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+    
+    <script>
+        let token = localStorage.getItem('token');
+        let websocket = null;
+        let isConnected = false;
+        
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            if (token) {
+                checkTokenValidity();
+            }
+        };
+        
+        // 显示状态消息
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // 显示注册表单
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+        
+        // 显示登录表单
+        function showLogin() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+        
+        // 用户注册
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            
+            if (!username || !email || !password) {
+                showStatus('authStatus', '请填写所有字段', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                if (response.ok) {
+                    showStatus('authStatus', '注册成功！请登录', 'success');
+                    showLogin();
+                } else {
+                    const error = await response.json();
+                    showStatus('authStatus', `注册失败: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('authStatus', `注册失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 用户登录
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showStatus('authStatus', '请输入用户名和密码', 'error');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    localStorage.setItem('token', token);
+                    
+                    showStatus('authStatus', '登录成功！', 'success');
+                    showLoggedInSections(data.user);
+                } else {
+                    const error = await response.json();
+                    showStatus('authStatus', `登录失败: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('authStatus', `登录失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 检查token有效性
+        async function checkTokenValidity() {
+            try {
+                const response = await fetch('/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    showLoggedInSections(user);
+                } else {
+                    localStorage.removeItem('token');
+                    token = null;
+                }
+            } catch (error) {
+                localStorage.removeItem('token');
+                token = null;
+            }
+        }
+        
+        // 显示登录后的界面
+        function showLoggedInSections(user) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('websocketSection').classList.remove('hidden');
+            document.getElementById('scanSection').classList.remove('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+            
+            document.getElementById('userInfo').innerHTML = `
+                <p><strong>用户名:</strong> ${user.username}</p>
+                <p><strong>邮箱:</strong> ${user.email}</p>
+                <p><strong>状态:</strong> ${user.is_active ? '活跃' : '非活跃'}</p>
+            `;
+            
+            loadJobs();
+            loadTasks();
+        }
+        
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            token = null;
+            
+            if (websocket) {
+                websocket.close();
+            }
+            
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('websocketSection').classList.add('hidden');
+            document.getElementById('scanSection').classList.add('hidden');
+            document.getElementById('userSection').classList.add('hidden');
+            
+            showStatus('authStatus', '已退出登录', 'info');
+        }
+        
+        // 连接WebSocket
+        function connectWebSocket() {
+            if (!token) {
+                showStatus('wsStatus', '请先登录', 'error');
+                return;
+            }
+            
+            const wsUrl = `ws://localhost:8000/ws/ws?token=${token}`;
+            websocket = new WebSocket(wsUrl);
+            
+            websocket.onopen = function(event) {
+                isConnected = true;
+                showStatus('wsStatus', 'WebSocket连接成功', 'success');
+                document.getElementById('wsConnectBtn').classList.add('hidden');
+                document.getElementById('wsDisconnectBtn').classList.remove('hidden');
+                
+                // 发送心跳
+                setInterval(() => {
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
+            
+            websocket.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                addMessage(`收到: ${JSON.stringify(message, null, 2)}`, 'received');
+                
+                // 处理任务更新
+                if (message.type === 'task_update') {
+                    loadTasks(); // 刷新任务列表
+                }
+            };
+            
+            websocket.onclose = function(event) {
+                isConnected = false;
+                showStatus('wsStatus', 'WebSocket连接已断开', 'info');
+                document.getElementById('wsConnectBtn').classList.remove('hidden');
+                document.getElementById('wsDisconnectBtn').classList.add('hidden');
+            };
+            
+            websocket.onerror = function(error) {
+                showStatus('wsStatus', 'WebSocket连接错误', 'error');
+            };
+        }
+        
+        // 断开WebSocket
+        function disconnectWebSocket() {
+            if (websocket) {
+                websocket.close();
+            }
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            try {
+                const messageObj = JSON.parse(message);
+                websocket.send(JSON.stringify(messageObj));
+                addMessage(`发送: ${message}`, 'sent');
+                input.value = '';
+            } catch (error) {
+                // 如果不是JSON格式，发送简单消息
+                const simpleMessage = { type: 'message', content: message };
+                websocket.send(JSON.stringify(simpleMessage));
+                addMessage(`发送: ${JSON.stringify(simpleMessage)}`, 'sent');
+                input.value = '';
+            }
+        }
+        
+        // 处理消息输入框回车事件
+        function handleMessageKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // 添加消息到显示区域
+        function addMessage(message, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `<small>${new Date().toLocaleTimeString()}</small><br>${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // 加载Jenkins任务列表
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/scan/jobs', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('jobSelect');
+                    select.innerHTML = '<option value="">请选择任务</option>';
+                    
+                    data.jobs.forEach(job => {
+                        const option = document.createElement('option');
+                        option.value = job.name;
+                        option.textContent = `${job.name} (${job.status})`;
+                        select.appendChild(option);
+                    });
+                    
+                    showStatus('scanStatus', `加载了 ${data.jobs.length} 个任务`, 'success');
+                } else {
+                    showStatus('scanStatus', '加载任务失败', 'error');
+                }
+            } catch (error) {
+                showStatus('scanStatus', `加载任务失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 触发扫描任务
+        async function triggerScan() {
+            const jobName = document.getElementById('jobSelect').value;
+            const paramsText = document.getElementById('jobParams').value.trim();
+            
+            if (!jobName) {
+                showStatus('scanStatus', '请选择一个任务', 'error');
+                return;
+            }
+            
+            let parameters = null;
+            if (paramsText) {
+                try {
+                    parameters = JSON.parse(paramsText);
+                } catch (error) {
+                    showStatus('scanStatus', '参数格式错误，请使用有效的JSON格式', 'error');
+                    return;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/scan/trigger', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ job_name: jobName, parameters })
+                });
+                
+                if (response.ok) {
+                    const task = await response.json();
+                    showStatus('scanStatus', `任务触发成功！任务ID: ${task.task_id}`, 'success');
+                    loadTasks(); // 刷新任务列表
+                } else {
+                    const error = await response.json();
+                    showStatus('scanStatus', `任务触发失败: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('scanStatus', `任务触发失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 加载用户任务列表
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/scan/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const tasks = await response.json();
+                    const taskList = document.getElementById('taskList');
+                    
+                    if (tasks.length === 0) {
+                        taskList.innerHTML = '<p>暂无任务</p>';
+                        return;
+                    }
+                    
+                    taskList.innerHTML = tasks.map(task => `
+                        <div class="task-item">
+                            <div><strong>任务ID:</strong> ${task.task_id}</div>
+                            <div><strong>Jenkins任务:</strong> ${task.job_name}</div>
+                            <div><strong>状态:</strong> <span class="task-status ${task.status}">${task.status}</span></div>
+                            <div><strong>构建号:</strong> ${task.jenkins_build_number || 'N/A'}</div>
+                            <div><strong>创建时间:</strong> ${new Date(task.created_at).toLocaleString()}</div>
+                            ${task.completed_at ? `<div><strong>完成时间:</strong> ${new Date(task.completed_at).toLocaleString()}</div>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    showStatus('scanStatus', '加载任务列表失败', 'error');
+                }
+            } catch (error) {
+                showStatus('scanStatus', `加载任务列表失败: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
