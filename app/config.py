@@ -9,8 +9,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", True)
     PORT: int = int(os.getenv("PORT", 8000))
     
-    # API authentication settings (deprecated)
-    API_TOKEN: str = os.getenv("API_TOKEN", "traepy-static-token")
+
     
     # JWT authentication settings
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
