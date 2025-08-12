@@ -1,42 +1,45 @@
-# Web框架 - 使用版本范围而非固定版本
+# Web framework - using version ranges instead of fixed versions
 fastapi>=0.116.0,<0.117.0
 uvicorn>=0.31.0,<0.32.0
 pydantic>=2.7.0,<3.0.0
 pydantic-settings>=2.0.0,<3.0.0
 
-# GraphQL支持
+# GraphQL support
 graphene>=3.2.0,<3.3.0
 strawberry-graphql>=0.220.0,<0.221.0
 
-# 数据库驱动 - 当前版本范围已经很好
+# Database driver - current version range is already good
 oracledb>=1.4.0,<2.0.0
 
-# HTTP客户端
+# HTTP client
 requests>=2.31.0,<3.0.0
 
-# 测试工具
+# Testing tools
 pytest>=8.0.0,<9.0.0
 pytest-cov>=4.1.0,<6.0.0
 
-# 工具库
+# Utility libraries
 python-dotenv>=1.0.0,<2.0.0
 
-# JWT认证相关
+# WebSocket support
+websockets>=11.0.0,<12.0.0
+
+# JWT authentication related
 python-jose[cryptography]>=3.3.0,<4.0.0
 passlib[bcrypt]>=1.7.4,<2.0.0
 python-multipart>=0.0.6,<1.0.0
 
-# 数据库ORM
+# Database ORM
 sqlalchemy>=2.0.0,<3.0.0
 
-# 邮箱验证
+# Email validation
 email-validator>=2.0.0,<3.0.0
 
-# 异步测试支持
+# Asynchronous testing support
 pytest-asyncio>=0.21.0,<1.0.0
 
-# HTTP测试客户端
+# HTTP testing client
 httpx>=0.25.0,<1.0.0
 
-# 确保 cryptography 包可用（解决之前的 DPY-3016 错误）
+# Ensure cryptography package is available (resolves previous DPY-3016 error)
 cryptography>=3.4.8
