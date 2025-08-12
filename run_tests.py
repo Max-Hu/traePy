@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-本地测试运行脚本
-用于在没有Docker的情况下测试应用功能
+Local test runner script
+Used to test application functionality without Docker
 """
 
 import os
@@ -10,14 +10,14 @@ import subprocess
 from pathlib import Path
 
 def setup_environment():
-    """设置测试环境变量"""
+    """Set up test environment variables"""
     os.environ['DATABASE_URL'] = 'sqlite:///./test.db'
     os.environ['JWT_SECRET_KEY'] = 'test-secret-key-for-testing-only'
     os.environ['JWT_ALGORITHM'] = 'HS256'
     os.environ['JWT_ACCESS_TOKEN_EXPIRE_MINUTES'] = '30'
     
 def install_minimal_deps():
-    """安装最小依赖包"""
+    """Install minimal dependency packages"""
     minimal_deps = [
         'fastapi',
         'uvicorn[standard]',
@@ -30,47 +30,47 @@ def install_minimal_deps():
         'httpx'
     ]
     
-    print("安装最小依赖包...")
+    print("Installing minimal dependency packages...")
     for dep in minimal_deps:
         try:
             subprocess.run([sys.executable, '-m', 'pip', 'install', dep], 
                          check=True, capture_output=True)
-            print(f"✓ {dep} 安装成功")
+            print(f"✓ {dep} installed successfully")
         except subprocess.CalledProcessError as e:
-            print(f"✗ {dep} 安装失败: {e}")
+            print(f"✗ {dep} installation failed: {e}")
             return False
     return True
 
 def run_tests():
-    """运行测试"""
-    print("\n运行单元测试...")
+    """Run tests"""
+    print("\nRunning unit tests...")
     try:
-        # 运行认证测试
+        # Run authentication tests
         result = subprocess.run([sys.executable, '-m', 'pytest', 'tests/test_auth.py', '-v'], 
                               capture_output=True, text=True)
-        print("认证测试结果:")
+        print("Authentication test results:")
         print(result.stdout)
         if result.stderr:
-            print("错误信息:", result.stderr)
+            print("Error message:", result.stderr)
             
-        # 运行WebSocket测试
+        # Run WebSocket tests
         result = subprocess.run([sys.executable, '-m', 'pytest', 'tests/test_websocket.py', '-v'], 
                               capture_output=True, text=True)
-        print("\nWebSocket测试结果:")
+        print("\nWebSocket test results:")
         print(result.stdout)
         if result.stderr:
-            print("错误信息:", result.stderr)
+            print("Error message:", result.stderr)
             
-        # 运行扫描测试
+        # Run scan tests
         result = subprocess.run([sys.executable, '-m', 'pytest', 'tests/test_scan.py', '-v'], 
                               capture_output=True, text=True)
-        print("\n扫描测试结果:")
+        print("\nScan test results:")
         print(result.stdout)
         if result.stderr:
-            print("错误信息:", result.stderr)
+            print("Error message:", result.stderr)
             
     except Exception as e:
-        print(f"测试运行失败: {e}")
+        print(f"Test execution failed: {e}")
         return False
     return True
 

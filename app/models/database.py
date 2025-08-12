@@ -15,7 +15,7 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # 关联关系
@@ -29,8 +29,8 @@ class ScanTask(Base):
     task_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
     job_name = Column(String(100), nullable=False)
     jenkins_build_number = Column(Integer, nullable=True)
-    status = Column(String(20), default="pending")  # pending, running, completed, failed
-    triggered_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed
+    triggered_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     parameters = Column(Text, nullable=True)  # JSON格式的参数
     result = Column(Text, nullable=True)  # JSON格式的结果
     created_at = Column(DateTime, default=datetime.utcnow)

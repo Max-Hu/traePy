@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # SQLite数据库 - 使用文件存储
+  # SQLite database - using file storage
   app:
     build: .
     ports:
@@ -17,7 +17,7 @@ services:
       - jenkins
     volumes:
       - ./logs:/app/logs
-      - ./data:/app/data  # 持久化数据库文件
+      - ./data:/app/data  # Persist database files
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

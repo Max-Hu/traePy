@@ -89,8 +89,8 @@ def test_get_available_jobs(mock_jenkins_service, auth_headers):
 
 @patch('app.routes.scan.jenkins_service')
 def test_get_available_jobs_jenkins_error(mock_jenkins_service, auth_headers):
-    """测试Jenkins服务错误时获取任务列表"""
-    # Mock Jenkins服务抛出异常
+    """Test getting job list when Jenkins service error occurs"""
+    # Mock Jenkins service throwing exception
     mock_jenkins_service.get_jobs.side_effect = Exception("Jenkins connection failed")
     
     response = client.get("/api/scan/jobs", headers=auth_headers)
@@ -173,7 +173,7 @@ def test_trigger_scan_task_jenkins_failure(mock_manager, mock_jenkins_service, t
     db.close()
 
 def test_trigger_scan_task_without_auth():
-    """测试未认证时触发扫描任务"""
+    """Test triggering scan task without authentication"""
     task_data = {
         "job_name": "test-job"
     }
@@ -183,13 +183,13 @@ def test_trigger_scan_task_without_auth():
     assert response.status_code == 403  # FastAPI HTTPBearer 返回403
 
 def test_get_user_tasks(test_user_and_token, auth_headers):
-    """测试获取用户任务列表"""
+    """Test getting user task list"""
     user, token = test_user_and_token
     
-    # 创建测试任务
+    # Create test task
     db = TestingSessionLocal()
     
-    # 清理现有任务
+    # Clean up existing tasks
     db.query(ScanTask).filter(ScanTask.triggered_by == user.id).delete()
     db.commit()
     
@@ -217,23 +217,136 @@ def test_get_user_tasks(test_user_and_token, auth_headers):
     assert response.status_code == 200
     tasks = response.json()
     
-    assert len(tasks) == 2
-    # 任务应该按创建时间倒序排列
-    assert tasks[0]["job_name"] == "test-job-2"  # 最新的任务
-    assert tasks[1]["job_name"] == "test-job-1"
+    assert len(tasks["items"]) == 2
+    # Tasks should be sorted by creation time in descending order
+    assert tasks["items"][0]["job_name"] == "test-job-2"  # Latest task
+    assert tasks["items"][1]["job_name"] == "test-job-1"
 
 def test_get_user_tasks_with_pagination(test_user_and_token, auth_headers):
-    """测试分页获取用户任务列表"""
+    """Test getting user task list with pagination"""
     user, token = test_user_and_token
     
-    # 创建多个测试任务
+    # Create multiple test tasks
     db = TestingSessionLocal()
     
-    # 清理现有任务
+    # Clear existing tasks
     db.query(ScanTask).filter(ScanTask.triggered_by == user.id).delete()
     db.commit()
     
-    # 创建5个测试任务
+    # Create 5 test tasks with different statuses
+    statuses = ["pending", "running", "completed", "failed", "completed"]
+    for i in range(5):
+        task = ScanTask(
+            job_name=f"test-job-{i}",
+            triggered_by=user.id,
+            status=statuses[i]
+        )
+        db.add(task)
+    
+    db.commit()
+    db.close()
+    
+    # Test first page
+    response = client.get("/api/scan/tasks?limit=2&offset=0", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Verify pagination response structure
+    assert "items" in data
+    assert "total" in data
+    assert "page" in data
+    assert "per_page" in data
+    assert "total_pages" in data
+    assert "has_next" in data
+    assert "has_prev" in data
+    
+    # Verify pagination values
+    assert len(data["items"]) == 2
+    assert data["total"] == 5
+    assert data["page"] == 1
+    assert data["per_page"] == 2
+    assert data["total_pages"] == 3
+    assert data["has_next"] is True
+    assert data["has_prev"] is False
+    
+    # Test second page
+    response = client.get("/api/scan/tasks?limit=2&offset=2", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 2
+    assert data["page"] == 2
+    assert data["has_next"] is True
+    assert data["has_prev"] is True
+    
+    # Test last page
+    response = client.get("/api/scan/tasks?limit=2&offset=4", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["page"] == 3
+    assert data["has_next"] is False
+    assert data["has_prev"] is True
+
+def test_get_user_tasks_with_status_filter(test_user_and_token, auth_headers):
+    """Test getting user task list with status filtering"""
+    user, token = test_user_and_token
+    
+    # Create multiple test tasks
+    db = TestingSessionLocal()
+    
+    # Clear existing tasks
+    db.query(ScanTask).filter(ScanTask.triggered_by == user.id).delete()
+    db.commit()
+    
+    # Create tasks with different statuses
+    statuses = ["pending", "running", "completed", "failed", "completed"]
+    for i in range(5):
+        task = ScanTask(
+            job_name=f"test-job-{i}",
+            triggered_by=user.id,
+            status=statuses[i]
+        )
+        db.add(task)
+    
+    db.commit()
+    db.close()
+    
+    # Test filtering by completed status
+    response = client.get("/api/scan/tasks?status=completed", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 2
+    for item in data["items"]:
+        assert item["status"] == "completed"
+    
+    # Test filtering by pending status
+    response = client.get("/api/scan/tasks?status=pending", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["status"] == "pending"
+    
+    # Test filtering with pagination
+    response = client.get("/api/scan/tasks?status=completed&limit=1&offset=0", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["total"] == 2
+    assert data["has_next"] is True
+
+def test_get_user_tasks_cursor_pagination(test_user_and_token, auth_headers):
+    """Test getting user task list with cursor-based pagination"""
+    user, token = test_user_and_token
+    
+    # Create multiple test tasks
+    db = TestingSessionLocal()
+    
+    # Clear existing tasks
+    db.query(ScanTask).filter(ScanTask.triggered_by == user.id).delete()
+    db.commit()
+    
+    # Create 5 test tasks
+    task_ids = []
     for i in range(5):
         task = ScanTask(
             job_name=f"test-job-{i}",
@@ -241,23 +354,74 @@ def test_get_user_tasks_with_pagination(test_user_and_token, auth_headers):
             status="completed"
         )
         db.add(task)
+        db.flush()  # Get the ID
+        task_ids.append(task.id)
     
     db.commit()
     db.close()
     
-    # 测试分页
-    response = client.get("/api/scan/tasks?limit=2&offset=0", headers=auth_headers)
+    # Test first page with cursor pagination
+    response = client.get("/api/scan/tasks/cursor?limit=2", headers=auth_headers)
     assert response.status_code == 200
-    tasks = response.json()
-    assert len(tasks) == 2
+    data = response.json()
     
-    response = client.get("/api/scan/tasks?limit=2&offset=2", headers=auth_headers)
+    # Verify cursor pagination response structure
+    assert "items" in data
+    assert "next_cursor" in data
+    assert "has_more" in data
+    assert "count" in data
+    
+    # Verify first page values
+    assert len(data["items"]) == 2
+    assert data["count"] == 2
+    assert data["has_more"] is True
+    assert data["next_cursor"] is not None
+    
+    # Test second page using cursor
+    next_cursor = data["next_cursor"]
+    response = client.get(f"/api/scan/tasks/cursor?limit=2&cursor={next_cursor}", headers=auth_headers)
     assert response.status_code == 200
-    tasks = response.json()
-    assert len(tasks) == 2
+    data = response.json()
+    assert len(data["items"]) == 2
+    assert data["has_more"] is True
+    
+    # Test cursor pagination with status filter
+    response = client.get("/api/scan/tasks/cursor?limit=3&status=completed", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 3
+    for item in data["items"]:
+        assert item["status"] == "completed"
+
+def test_get_user_tasks_empty_result(test_user_and_token, auth_headers):
+    """Test getting user task list when no tasks exist"""
+    user, token = test_user_and_token
+    
+    # Clear all tasks for the user
+    db = TestingSessionLocal()
+    db.query(ScanTask).filter(ScanTask.triggered_by == user.id).delete()
+    db.commit()
+    db.close()
+    
+    # Test empty result with pagination
+    response = client.get("/api/scan/tasks", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert len(data["items"]) == 0
+    assert data["has_next"] is False
+    assert data["has_prev"] is False
+    
+    # Test empty result with cursor pagination
+    response = client.get("/api/scan/tasks/cursor", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 0
+    assert data["has_more"] is False
+    assert data["next_cursor"] is None
 
 def test_get_task_detail(test_user_and_token, auth_headers):
-    """测试获取特定任务详情"""
+    """Test getting specific task details"""
     user, token = test_user_and_token
     
     # 创建测试任务
@@ -288,7 +452,7 @@ def test_get_task_detail(test_user_and_token, auth_headers):
     assert data["triggered_by"] == user.id
 
 def test_get_task_detail_not_found(test_user_and_token, auth_headers):
-    """测试获取不存在的任务详情"""
+    """Test getting details of non-existent task"""
     response = client.get("/api/scan/tasks/nonexistent-task-id", headers=auth_headers)
     
     assert response.status_code == 404

@@ -15,7 +15,7 @@ from app.middleware import GraphQLAuthMiddleware
 from app.logger import setup_logger
 from app.database import create_tables
 
-# 初始化日志器
+# Initialize logger
 logger = setup_logger("traepy.main")
 
 app = FastAPI(title="TraePy API", description="REST and GraphQL API service")
@@ -56,7 +56,7 @@ app.add_middleware(
 # Add GraphQL authentication middleware
 app.add_middleware(GraphQLAuthMiddleware)
 
-# 创建数据库表
+# Create database tables
 try:
     create_tables()
 except Exception as e:

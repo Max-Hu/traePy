@@ -1,48 +1,48 @@
-Requirements.txt 中所有依赖的具体安装版本
-===========================================
+Specific installed versions of all dependencies in Requirements.txt
+================================================================
 
-生成时间: 2025年1月
+Generation time: January 2025
 
-主要依赖包版本对比:
+Main dependency package version comparison:
 
-🌐 Web框架
------------
-fastapi: 0.116.1 ✅ (要求: ==0.116.1)
-uvicorn: 0.31.1 ✅ (要求: >=0.31.0,<0.32.0)
-pydantic: 2.11.7 ✅ (要求: >=2.7.0,<3.0.0)
-pydantic-settings: 2.10.1 ✅ (要求: >=2.0.0,<3.0.0)
+🌐 Web Framework
+---------------
+fastapi: 0.116.1 ✅ (required: ==0.116.1)
+uvicorn: 0.31.1 ✅ (required: >=0.31.0,<0.32.0)
+pydantic: 2.11.7 ✅ (required: >=2.7.0,<3.0.0)
+pydantic-settings: 2.10.1 ✅ (required: >=2.0.0,<3.0.0)
 
-📊 GraphQL支持
+📊 GraphQL Support
+------------------
+graphene: 3.2.2 ✅ (required: ==3.2.2)
+strawberry-graphql: 0.220.0 ✅ (required: >=0.220.0,<0.221.0)
+
+🗄️ Database Driver
+------------------
+oracledb: 1.4.2 ✅ (required: >=1.4.0,<2.0.0)
+
+🌐 HTTP Client
 --------------
-graphene: 3.2.2 ✅ (要求: ==3.2.2)
-strawberry-graphql: 0.220.0 ✅ (要求: >=0.220.0,<0.221.0)
+requests: 2.32.4 ✅ (required: >=2.31.0,<3.0.0)
 
-🗄️ 数据库驱动
---------------
-oracledb: 1.4.2 ✅ (要求: >=1.4.0,<2.0.0)
+🧪 Testing Tools
+----------------
+pytest: 8.4.1 ✅ (required: >=8.0.0,<9.0.0)
+pytest-cov: 5.0.0 ✅ (required: >=4.1.0,<6.0.0)
 
-🌐 HTTP客户端
--------------
-requests: 2.32.4 ✅ (要求: >=2.31.0,<3.0.0)
+🔧 Utility Libraries
+--------------------
+python-dotenv: 1.1.1 ⚠️ (required: ==1.0.0) *version slightly higher*
+cryptography: 45.0.6 ✅ (automatically installed dependency)
 
-🧪 测试工具
------------
-pytest: 8.4.1 ✅ (要求: >=8.0.0,<9.0.0)
-pytest-cov: 5.0.0 ✅ (要求: >=4.1.0,<6.0.0)
+Other automatically installed dependency packages:
+=================================================
 
-🔧 工具库
----------
-python-dotenv: 1.1.1 ⚠️ (要求: ==1.0.0) *版本略高*
-cryptography: 45.0.6 ✅ (自动安装的依赖)
-
-其他自动安装的依赖包:
-====================
-
-starlette: 0.47.2 (FastAPI依赖)
-click: 8.2.1 (Uvicorn依赖)
-h11: 0.16.0 (Uvicorn依赖)
-pydantic_core: 2.33.2 (Pydantic依赖)
-typing_extensions: 4.14.1 (类型支持)
+starlette: 0.47.2 (FastAPI dependency)
+click: 8.2.1 (Uvicorn dependency)
+h11: 0.16.0 (Uvicorn dependency)
+pydantic_core: 2.33.2 (Pydantic dependency)
+typing_extensions: 4.14.1 (type support)
 aniso8601: 9.0.1
 annotated-types: 0.7.0
 anyio: 4.10.0
@@ -67,15 +67,15 @@ typing-inspection: 0.4.1
 urllib3: 2.5.0
 wheel: 0.45.1
 
-总结:
-=====
-✅ 所有主要依赖都已正确安装并符合版本要求
-⚠️ python-dotenv 版本稍高于要求的固定版本，但通常不会造成兼容性问题
-✅ 所有包都与 Python 3.11 兼容
-✅ cryptography 包已正确安装，解决了之前的 DPY-3016 错误
+Summary:
+========
+✅ All main dependencies are correctly installed and meet version requirements
+⚠️ python-dotenv version is slightly higher than the required fixed version, but usually does not cause compatibility issues
+✅ All packages are compatible with Python 3.11
+✅ cryptography package is correctly installed, resolving the previous DPY-3016 error
 
-注意事项:
-=========
-- pip 有新版本可用 (24.0 -> 25.2)，可考虑升级
-- 所有依赖都在 Docker 容器环境中正常运行
-- Oracle 数据库连接功能正常，支持 thin mode
+Notes:
+======
+- pip has a new version available (24.0 -> 25.2), consider upgrading
+- All dependencies run normally in Docker container environment
+- Oracle database connection functions normally, supports thin mode

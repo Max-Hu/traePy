@@ -17,10 +17,10 @@ logger = setup_logger(__name__)
 
 router = APIRouter(tags=["Scan Tasks"])
 
-# 创建Jenkins服务实例
+# Create Jenkins service instance
 jenkins_service = JenkinsService()
 
-# Pydantic模型
+# Pydantic models
 class ScanTaskCreate(BaseModel):
     job_name: str
     parameters: Optional[Dict[str, Any]] = None
@@ -41,65 +41,80 @@ class ScanTaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PaginatedScanTaskResponse(BaseModel):
+    items: List[ScanTaskResponse]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+class CursorPaginatedScanTaskResponse(BaseModel):
+    items: List[ScanTaskResponse]
+    next_cursor: Optional[int]
+    has_more: bool
+    count: int
+
 async def monitor_task_status(task_id: str, job_name: str, build_number: int):
-    """后台任务：监控Jenkins任务状态并更新数据库"""
+    """Background task: Monitor Jenkins task status and update database"""
     db = SessionLocal()
     try:
-        # 获取任务记录
+        # Get task record
         task = db.query(ScanTask).filter(ScanTask.task_id == task_id).first()
         if not task:
             logger.error(f"Task not found: {task_id}")
             return
         
-        # 监控任务状态
-        max_attempts = 300  # 最多监控5分钟
+        # Monitor task status
+        max_attempts = 300  # Monitor for maximum 5 minutes
         attempt = 0
         
         while attempt < max_attempts:
             try:
-                # 获取构建状态
+                # Get build status
                 build_status = jenkins_service.get_build_status(job_name, build_number)
                 
-                # 更新任务状态
+                # Update task status
                 if build_status["building"]:
                     if task.status != "running":
                         task.status = "running"
                         task.updated_at = datetime.utcnow()
                         db.commit()
                         
-                        # 通过WebSocket通知用户
+                        # Notify user via WebSocket
                         await manager.send_task_update(task)
                         logger.info(f"Task {task_id} status updated to running")
                 else:
-                    # 任务完成
+                    # Task completed
                     result = build_status["result"]
                     if result == "SUCCESS":
                         task.status = "completed"
                     elif result == "FAILURE":
                         task.status = "failed"
                     else:
-                        task.status = "failed"  # 其他状态也视为失败
+                        task.status = "failed"  # Other statuses are also considered as failure
                     
                     task.result = json.dumps(build_status)
                     task.completed_at = datetime.utcnow()
                     task.updated_at = datetime.utcnow()
                     db.commit()
                     
-                    # 通过WebSocket通知用户
+                    # Notify user via WebSocket
                     await manager.send_task_update(task)
                     logger.info(f"Task {task_id} completed with status: {task.status}")
                     break
                 
-                # 等待1秒后再次检查
+                # Wait 1 second before checking again
                 await asyncio.sleep(1)
                 attempt += 1
                 
             except Exception as e:
                 logger.error(f"Error monitoring task {task_id}: {str(e)}")
-                await asyncio.sleep(5)  # 出错时等待更长时间
+                await asyncio.sleep(5)  # Wait longer when error occurs
                 attempt += 5
         
-        # 如果超时仍未完成，标记为超时
+        # If timeout and still not completed, mark as timeout
         if attempt >= max_attempts:
             task.status = "timeout"
             task.updated_at = datetime.utcnow()
@@ -121,11 +136,11 @@ async def trigger_scan_task(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """触发扫描任务"""
+    """Trigger scan task"""
     logger.info(f"User {current_user.username} triggering scan task: {task_data.job_name}")
     
     try:
-        # 创建任务记录
+        # Create task record
         scan_task = ScanTask(
             job_name=task_data.job_name,
             triggered_by=current_user.id,
@@ -137,17 +152,17 @@ async def trigger_scan_task(
         db.commit()
         db.refresh(scan_task)
         
-        # 触发Jenkins任务
+        # Trigger Jenkins task
         try:
             build_number = jenkins_service.build_job(task_data.job_name, task_data.parameters)
             
-            # 更新任务记录
+            # Update task record
             scan_task.jenkins_build_number = build_number
             scan_task.status = "triggered" if build_number > 0 else "failed"
             scan_task.updated_at = datetime.utcnow()
             db.commit()
             
-            # 如果成功触发，启动后台监控任务
+            # If successfully triggered, start background monitoring task
             if build_number > 0:
                 background_tasks.add_task(
                     monitor_task_status,
@@ -159,17 +174,17 @@ async def trigger_scan_task(
             else:
                 logger.error(f"Failed to get build number for task: {scan_task.task_id}")
             
-            # 通过WebSocket通知用户
+            # Notify user via WebSocket
             await manager.send_task_update(scan_task)
             
         except Exception as jenkins_error:
-            # Jenkins触发失败，更新任务状态
+            # Jenkins trigger failed, update task status
             scan_task.status = "failed"
             scan_task.result = json.dumps({"error": str(jenkins_error)})
             scan_task.updated_at = datetime.utcnow()
             db.commit()
             
-            # 通过WebSocket通知用户
+            # Notify user via WebSocket
             await manager.send_task_update(scan_task)
             
             logger.error(f"Jenkins job trigger failed: {str(jenkins_error)}")
@@ -187,23 +202,93 @@ async def trigger_scan_task(
             detail=f"Failed to create scan task: {str(e)}"
         )
 
-@router.get("/tasks", response_model=List[ScanTaskResponse])
+@router.get("/tasks", response_model=PaginatedScanTaskResponse)
 async def get_user_tasks(
     limit: int = 20,
     offset: int = 0,
+    status: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取用户的扫描任务列表"""
-    logger.info(f"User {current_user.username} requesting task list")
+    """Get user's scan task list with pagination and filtering"""
+    logger.info(f"User {current_user.username} requesting task list with limit={limit}, offset={offset}, status={status}")
     
-    tasks = db.query(ScanTask).filter(
+    # Build base query
+    query = db.query(ScanTask).filter(
         ScanTask.triggered_by == current_user.id
-    ).order_by(
+    )
+    
+    # Apply status filter if provided
+    if status:
+        query = query.filter(ScanTask.status == status)
+    
+    # Get total count
+    total_count = query.count()
+    
+    # Get paginated results
+    tasks = query.order_by(
         ScanTask.created_at.desc()
     ).offset(offset).limit(limit).all()
     
-    return tasks
+    # Calculate pagination info
+    page = offset // limit + 1
+    total_pages = (total_count + limit - 1) // limit
+    has_next = offset + limit < total_count
+    has_prev = offset > 0
+    
+    return PaginatedScanTaskResponse(
+         items=tasks,
+         total=total_count,
+         page=page,
+         per_page=limit,
+         total_pages=total_pages,
+         has_next=has_next,
+         has_prev=has_prev
+     )
+
+@router.get("/tasks/cursor", response_model=CursorPaginatedScanTaskResponse)
+async def get_user_tasks_cursor(
+    limit: int = 20,
+    cursor: Optional[int] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's scan task list using cursor-based pagination (better for large datasets)"""
+    logger.info(f"User {current_user.username} requesting task list with cursor pagination: limit={limit}, cursor={cursor}, status={status}")
+    
+    # Build base query
+    query = db.query(ScanTask).filter(
+        ScanTask.triggered_by == current_user.id
+    )
+    
+    # Apply status filter if provided
+    if status:
+        query = query.filter(ScanTask.status == status)
+    
+    # Apply cursor filter (get records with ID less than cursor for descending order)
+    if cursor:
+        query = query.filter(ScanTask.id < cursor)
+    
+    # Get results ordered by ID descending (most recent first)
+    tasks = query.order_by(
+        ScanTask.id.desc()
+    ).limit(limit + 1).all()  # Get one extra to check if there are more
+    
+    # Check if there are more results
+    has_more = len(tasks) > limit
+    if has_more:
+        tasks = tasks[:-1]  # Remove the extra record
+    
+    # Get next cursor (ID of the last item)
+    next_cursor = tasks[-1].id if tasks else None
+    
+    return CursorPaginatedScanTaskResponse(
+        items=tasks,
+        next_cursor=next_cursor,
+        has_more=has_more,
+        count=len(tasks)
+    )
 
 @router.get("/tasks/{task_id}", response_model=ScanTaskResponse)
 async def get_task_detail(
@@ -211,7 +296,7 @@ async def get_task_detail(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取特定任务的详细信息"""
+    """Get detailed information of specific task"""
     logger.info(f"User {current_user.username} requesting task detail: {task_id}")
     
     task = db.query(ScanTask).filter(

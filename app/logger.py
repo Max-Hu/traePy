@@ -6,43 +6,43 @@ from app.config import settings
 
 def setup_logger(name: str = None) -> logging.Logger:
     """
-    设置并返回配置好的logger实例
+    Set up and return a configured logger instance
     
     Args:
-        name: logger名称，如果为None则使用root logger
+        name: logger name, if None then use root logger
     
     Returns:
-        配置好的logger实例
+        configured logger instance
     """
     logger = logging.getLogger(name)
     
-    # 避免重复配置
+    # Avoid duplicate configuration
     if logger.handlers:
         return logger
     
-    # 设置日志级别
+    # Set log level
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
     logger.setLevel(log_level)
     
-    # 创建格式化器
+    # Create formatter
     formatter = logging.Formatter(settings.LOG_FORMAT)
     
-    # 控制台处理器
+    # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # 文件处理器 - 根据环境和配置决定是否写入文件
+    # File handler - decide whether to write to file based on environment and configuration
     if settings.LOG_TO_FILE and settings.ENVIRONMENT == "development":
-        # 开发环境默认日志文件路径
+        # Default log file path for development environment
         log_file = settings.LOG_FILE or "logs/traepy.log"
         
-        # 确保日志目录存在
+        # Ensure log directory exists
         log_file_path = Path(log_file)
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # 使用RotatingFileHandler避免日志文件过大
+        # Use RotatingFileHandler to avoid log files becoming too large
         file_handler = logging.handlers.RotatingFileHandler(
             log_file,
             maxBytes=10*1024*1024,  # 10MB

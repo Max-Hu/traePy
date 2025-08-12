@@ -13,7 +13,7 @@ from app.logger import setup_logger
 logger = setup_logger(__name__)
 
 class ConnectionManager:
-    """WebSocket连接管理器"""
+    """WebSocket connection manager"""
     
     def __init__(self):
         # 存储活跃连接: {user_id: {connection_id: websocket}}
