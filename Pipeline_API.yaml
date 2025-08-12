@@ -1,0 +1,517 @@
+openapi: 3.0.0
+info:
+  title: Pipeline Management API
+  version: 1.0.0
+  description: REST API for managing CI/CD pipelines including creation, querying and monitoring
+
+servers:
+  - url: http://localhost:8000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PipelineCreate:
+      type: object
+      required:
+        - api_name
+        - branch
+        - target_env
+      properties:
+        api_name:
+          type: string
+          description: API name
+        branch:
+          type: string
+          description: Branch name
+        target_env:
+          type: string
+          enum: [dev, test, staging, prod]
+          description: Target environment
+        jira_id:
+          type: string
+          description: JIRA ticket ID (optional)
+
+    PipelineResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Pipeline ID
+        status:
+          type: string
+          enum: [pending, running, success, failed, cancelled]
+          description: Pipeline status
+        api_name:
+          type: string
+          description: API name
+        api_version:
+          type: string
+          description: API version
+        stage:
+          type: string
+          enum: [build, test, deploy, verify, complete]
+          description: Current stage
+        creator:
+          type: string
+          description: Creator
+        created_date:
+          type: string
+          format: date-time
+          description: Created date
+        branch:
+          type: string
+          description: Branch name
+        target_env:
+          type: string
+          description: Target environment
+        jira_id:
+          type: string
+          nullable: true
+          description: JIRA ticket ID
+        duration:
+          type: integer
+          nullable: true
+          description: Execution duration (seconds)
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Updated time
+
+    PaginatedPipelineResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineResponse'
+          description: Pipeline list
+        total:
+          type: integer
+          description: Total count
+        page:
+          type: integer
+          description: Current page
+        per_page:
+          type: integer
+          description: Items per page
+        total_pages:
+          type: integer
+          description: Total pages
+        has_next:
+          type: boolean
+          description: Has next page
+        has_prev:
+          type: boolean
+          description: Has previous page
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error details
+
+security:
+  - BearerAuth: []
+
+paths:
+  /pipelines:
+    get:
+      summary: Get Pipeline List
+      description: Get Pipeline list with pagination and multiple filtering options
+      tags:
+        - Pipeline Management
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, running, success, failed, cancelled]
+          description: Filter by status
+        - in: query
+          name: api_name
+          schema:
+            type: string
+          description: Filter by API name
+        - in: query
+          name: stage
+          schema:
+            type: string
+            enum: [build, test, deploy, verify, complete]
+          description: Filter by stage
+        - in: query
+          name: creator
+          schema:
+            type: string
+          description: Filter by creator
+        - in: query
+          name: target_env
+          schema:
+            type: string
+            enum: [dev, test, staging, prod]
+          description: Filter by target environment
+        - in: query
+          name: created_from
+          schema:
+            type: string
+            format: date
+          description: Start date for creation time filter (YYYY-MM-DD)
+        - in: query
+          name: created_to
+          schema:
+            type: string
+            format: date
+          description: End date for creation time filter (YYYY-MM-DD)
+      responses:
+        200:
+          description: Successfully retrieved Pipeline list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPipelineResponse'
+              example:
+                items:
+                  - id: 1
+                    status: "success"
+                    api_name: "user-service"
+                    api_version: "v1.2.3"
+                    stage: "complete"
+                    creator: "john.doe"
+                    created_date: "2024-01-15T10:30:00Z"
+                    branch: "main"
+                    target_env: "prod"
+                    jira_id: "PROJ-1234"
+                    duration: 1800
+                    updated_at: "2024-01-15T11:00:00Z"
+                  - id: 2
+                    status: "running"
+                    api_name: "order-service"
+                    api_version: "v2.1.0"
+                    stage: "deploy"
+                    creator: "jane.smith"
+                    created_date: "2024-01-15T14:15:00Z"
+                    branch: "feature/new-payment"
+                    target_env: "staging"
+                    jira_id: "PROJ-1235"
+                    duration: null
+                    updated_at: "2024-01-15T14:20:00Z"
+                total: 45
+                page: 1
+                per_page: 20
+                total_pages: 3
+                has_next: true
+                has_prev: false
+        401:
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+    post:
+      summary: Create New Pipeline
+      description: Create and start a new CI/CD Pipeline
+      tags:
+        - Pipeline Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreate'
+            example:
+              api_name: "user-service"
+              branch: "feature/user-profile"
+              target_env: "staging"
+              jira_id: "PROJ-1236"
+      responses:
+        201:
+          description: Pipeline created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineResponse'
+              example:
+                id: 3
+                status: "pending"
+                api_name: "user-service"
+                api_version: "v1.2.4-SNAPSHOT"
+                stage: "build"
+                creator: "john.doe"
+                created_date: "2024-01-15T15:30:00Z"
+                branch: "feature/user-profile"
+                target_env: "staging"
+                jira_id: "PROJ-1236"
+                duration: null
+                updated_at: null
+        400:
+          description: Bad request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_branch:
+                  summary: Invalid branch
+                  value:
+                    detail: "Branch 'invalid-branch' does not exist"
+                invalid_env:
+                  summary: Invalid environment
+                  value:
+                    detail: "Target environment must be one of: dev, test, staging, prod"
+        401:
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        409:
+          description: Pipeline already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Pipeline for api_name 'user-service' and branch 'feature/user-profile' already exists"
+      security:
+        - BearerAuth: []
+
+  /pipelines/search:
+    get:
+      summary: Search Pipeline by API Name
+      description: Search Pipeline by API name with fuzzy and exact matching support
+      tags:
+        - Pipeline Management
+      parameters:
+        - in: query
+          name: api_name
+          required: true
+          schema:
+            type: string
+          description: API name (supports fuzzy search)
+          example: "user"
+        - in: query
+          name: exact_match
+          schema:
+            type: boolean
+            default: false
+          description: Whether to use exact matching
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, running, success, failed, cancelled]
+          description: Filter by status
+      responses:
+        200:
+          description: Search successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPipelineResponse'
+              example:
+                items:
+                  - id: 1
+                    status: "success"
+                    api_name: "user-service"
+                    api_version: "v1.2.3"
+                    stage: "complete"
+                    creator: "john.doe"
+                    created_date: "2024-01-15T10:30:00Z"
+                    branch: "main"
+                    target_env: "prod"
+                    jira_id: "PROJ-1234"
+                    duration: 1800
+                    updated_at: "2024-01-15T11:00:00Z"
+                  - id: 4
+                    status: "running"
+                    api_name: "user-auth-service"
+                    api_version: "v2.0.1"
+                    stage: "test"
+                    creator: "jane.smith"
+                    created_date: "2024-01-15T16:00:00Z"
+                    branch: "develop"
+                    target_env: "test"
+                    jira_id: "PROJ-1237"
+                    duration: null
+                    updated_at: "2024-01-15T16:05:00Z"
+                total: 2
+                page: 1
+                per_page: 20
+                total_pages: 1
+                has_next: false
+                has_prev: false
+        400:
+          description: Bad request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "api_name parameter is required"
+        401:
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+  /pipelines/{pipeline_id}:
+    get:
+      summary: Get Pipeline Details
+      description: Get detailed information of specified Pipeline
+      tags:
+        - Pipeline Management
+      parameters:
+        - in: path
+          name: pipeline_id
+          required: true
+          schema:
+            type: integer
+          description: Pipeline ID
+          example: 1
+      responses:
+        200:
+          description: Successfully retrieved Pipeline details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineResponse'
+              example:
+                id: 1
+                status: "success"
+                api_name: "user-service"
+                api_version: "v1.2.3"
+                stage: "complete"
+                creator: "john.doe"
+                created_date: "2024-01-15T10:30:00Z"
+                branch: "main"
+                target_env: "prod"
+                jira_id: "PROJ-1234"
+                duration: 1800
+                updated_at: "2024-01-15T11:00:00Z"
+        401:
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        404:
+          description: Pipeline not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Pipeline not found"
+      security:
+        - BearerAuth: []
+
+    delete:
+      summary: Cancel Pipeline
+      description: Cancel running Pipeline or delete pending Pipeline
+      tags:
+        - Pipeline Management
+      parameters:
+        - in: path
+          name: pipeline_id
+          required: true
+          schema:
+            type: integer
+          description: Pipeline ID
+          example: 1
+      responses:
+        200:
+          description: Pipeline cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Response message
+              example:
+                message: "Pipeline cancelled successfully"
+        400:
+          description: Pipeline cannot be cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Cannot cancel completed pipeline"
+        401:
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "You can only cancel your own pipelines"
+        404:
+          description: Pipeline not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Pipeline not found"
+      security:
+        - BearerAuth: []

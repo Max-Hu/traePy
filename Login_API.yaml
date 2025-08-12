@@ -1,0 +1,298 @@
+openapi: 3.0.0
+info:
+  title: Login Authentication API
+  version: 1.0.0
+  description: REST API for user authentication including login, registration, logout and user management
+
+servers:
+  - url: http://localhost:8000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserCreate:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        password:
+          type: string
+          description: 密码
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+        username:
+          type: string
+          description: 用户名
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        is_active:
+          type: boolean
+          description: 用户是否激活
+
+    Token:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT访问令牌
+        token_type:
+          type: string
+          description: 令牌类型
+          example: bearer
+        expires_in:
+          type: integer
+          description: 令牌过期时间（秒）
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+        password:
+          type: string
+          description: 密码
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: 错误详情
+
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 响应消息
+          example: Successfully logged out
+
+    ConnectionsResponse:
+      type: object
+      properties:
+        total_connections:
+          type: integer
+          description: 总连接数
+        users_connected:
+          type: integer
+          description: 已连接用户数
+        connections_by_user:
+          type: object
+          additionalProperties:
+            type: integer
+          description: 每个用户的连接数
+
+security:
+  - BearerAuth: []
+
+paths:
+  /register:
+    post:
+      summary: 用户注册
+      description: 创建新用户账户
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            example:
+              username: "testuser"
+              email: "test@example.com"
+              password: "password123"
+      responses:
+        200:
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        400:
+          description: 注册失败 - 用户名或邮箱已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                username_exists:
+                  summary: 用户名已存在
+                  value:
+                    detail: "Username already registered"
+                email_exists:
+                  summary: 邮箱已存在
+                  value:
+                    detail: "Email already registered"
+      security: []
+
+  /login:
+    post:
+      summary: 用户登录
+      description: 用户身份验证并获取访问令牌
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: "testuser"
+              password: "password123"
+      responses:
+        200:
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+              example:
+                access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                token_type: "bearer"
+                expires_in: 1800
+                user:
+                  id: 1
+                  username: "testuser"
+                  email: "test@example.com"
+                  is_active: true
+        401:
+          description: 登录失败 - 用户名或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Incorrect username or password"
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+              example: "Bearer"
+      security: []
+
+  /me:
+    get:
+      summary: 获取当前用户信息
+      description: 获取当前已认证用户的详细信息
+      tags:
+        - Authentication
+      responses:
+        200:
+          description: 成功获取用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                id: 1
+                username: "testuser"
+                email: "test@example.com"
+                is_active: true
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+  /logout:
+    post:
+      summary: 用户登出
+      description: 用户登出（客户端需要删除token）
+      tags:
+        - Authentication
+      responses:
+        200:
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+              example:
+                message: "Successfully logged out"
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+  /ws:
+    get:
+      summary: WebSocket连接端点
+      description: 建立WebSocket连接用于实时通信，需要JWT令牌验证
+      tags:
+        - WebSocket
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: JWT访问令牌
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        101:
+          description: WebSocket连接建立成功
+        1008:
+          description: 连接被拒绝 - 令牌无效或用户未激活
+      security: []
+
+  /connections:
+    get:
+      summary: 获取活跃连接数
+      description: 获取当前WebSocket活跃连接统计信息（调试用）
+      tags:
+        - WebSocket
+      responses:
+        200:
+          description: 成功获取连接统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionsResponse'
+              example:
+                total_connections: 5
+                users_connected: 3
+                connections_by_user:
+                  "1": 2
+                  "2": 1
+                  "3": 2
+      security: []

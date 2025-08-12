@@ -1,0 +1,416 @@
+openapi: 3.0.0
+info:
+  title: Scan Tasks API
+  version: 1.0.0
+  description: REST API for managing Jenkins scan tasks including triggering, monitoring and retrieving scan results
+
+servers:
+  - url: http://localhost:8000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ScanTaskCreate:
+      type: object
+      required:
+        - job_name
+      properties:
+        job_name:
+          type: string
+          description: Jenkins任务名称
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: 任务参数（可选）
+
+    ScanTaskResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 任务ID
+        task_id:
+          type: string
+          description: 任务唯一标识符
+        job_name:
+          type: string
+          description: Jenkins任务名称
+        jenkins_build_number:
+          type: integer
+          nullable: true
+          description: Jenkins构建编号
+        status:
+          type: string
+          enum: [pending, triggered, running, completed, failed, timeout]
+          description: 任务状态
+        triggered_by:
+          type: integer
+          description: 触发用户ID
+        parameters:
+          type: string
+          nullable: true
+          description: 任务参数（JSON字符串）
+        result:
+          type: string
+          nullable: true
+          description: 任务结果（JSON字符串）
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 更新时间
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 完成时间
+
+    PaginatedScanTaskResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanTaskResponse'
+          description: 任务列表
+        total:
+          type: integer
+          description: 总记录数
+        page:
+          type: integer
+          description: 当前页码
+        per_page:
+          type: integer
+          description: 每页记录数
+        total_pages:
+          type: integer
+          description: 总页数
+        has_next:
+          type: boolean
+          description: 是否有下一页
+        has_prev:
+          type: boolean
+          description: 是否有上一页
+
+    CursorPaginatedScanTaskResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanTaskResponse'
+          description: 任务列表
+        next_cursor:
+          type: integer
+          nullable: true
+          description: 下一页游标
+        has_more:
+          type: boolean
+          description: 是否有更多数据
+        count:
+          type: integer
+          description: 当前页记录数
+
+    AvailableJobsResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            type: string
+          description: 可用的Jenkins任务列表
+        count:
+          type: integer
+          description: 任务数量
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: 错误详情
+
+security:
+  - BearerAuth: []
+
+paths:
+  /trigger:
+    post:
+      summary: 触发扫描任务
+      description: 创建并触发一个新的Jenkins扫描任务
+      tags:
+        - Scan Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanTaskCreate'
+            example:
+              job_name: "security-scan-pipeline"
+              parameters:
+                branch: "main"
+                environment: "staging"
+      responses:
+        200:
+          description: 任务触发成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanTaskResponse'
+              example:
+                id: 1
+                task_id: "task_12345678-1234-1234-1234-123456789abc"
+                job_name: "security-scan-pipeline"
+                jenkins_build_number: 42
+                status: "triggered"
+                triggered_by: 1
+                parameters: '{"branch": "main", "environment": "staging"}'
+                result: null
+                created_at: "2024-01-15T10:30:00Z"
+                updated_at: "2024-01-15T10:30:05Z"
+                completed_at: null
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        500:
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Failed to trigger Jenkins job: Connection timeout"
+      security:
+        - BearerAuth: []
+
+  /tasks:
+    get:
+      summary: 获取用户任务列表（分页）
+      description: 获取当前用户的扫描任务列表，支持分页和状态过滤
+      tags:
+        - Scan Tasks
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: 每页记录数
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: 偏移量
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, triggered, running, completed, failed, timeout]
+          description: 状态过滤（可选）
+      responses:
+        200:
+          description: 成功获取任务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedScanTaskResponse'
+              example:
+                items:
+                  - id: 1
+                    task_id: "task_12345678-1234-1234-1234-123456789abc"
+                    job_name: "security-scan-pipeline"
+                    jenkins_build_number: 42
+                    status: "completed"
+                    triggered_by: 1
+                    parameters: '{"branch": "main"}'
+                    result: '{"status": "SUCCESS", "duration": 120000}'
+                    created_at: "2024-01-15T10:30:00Z"
+                    updated_at: "2024-01-15T10:32:00Z"
+                    completed_at: "2024-01-15T10:32:00Z"
+                total: 25
+                page: 1
+                per_page: 20
+                total_pages: 2
+                has_next: true
+                has_prev: false
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+  /tasks/cursor:
+    get:
+      summary: 获取用户任务列表（游标分页）
+      description: 使用游标分页获取当前用户的扫描任务列表，适用于大数据集
+      tags:
+        - Scan Tasks
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: 每页记录数
+        - in: query
+          name: cursor
+          schema:
+            type: integer
+          description: 游标位置（可选）
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, triggered, running, completed, failed, timeout]
+          description: 状态过滤（可选）
+      responses:
+        200:
+          description: 成功获取任务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPaginatedScanTaskResponse'
+              example:
+                items:
+                  - id: 25
+                    task_id: "task_87654321-4321-4321-4321-cba987654321"
+                    job_name: "security-scan-pipeline"
+                    jenkins_build_number: 67
+                    status: "running"
+                    triggered_by: 1
+                    parameters: '{"branch": "develop"}'
+                    result: null
+                    created_at: "2024-01-15T14:30:00Z"
+                    updated_at: "2024-01-15T14:31:00Z"
+                    completed_at: null
+                next_cursor: 24
+                has_more: true
+                count: 20
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+      security:
+        - BearerAuth: []
+
+  /tasks/{task_id}:
+    get:
+      summary: 获取任务详情
+      description: 获取指定任务的详细信息
+      tags:
+        - Scan Tasks
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: 任务ID
+          example: "task_12345678-1234-1234-1234-123456789abc"
+      responses:
+        200:
+          description: 成功获取任务详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanTaskResponse'
+              example:
+                id: 1
+                task_id: "task_12345678-1234-1234-1234-123456789abc"
+                job_name: "security-scan-pipeline"
+                jenkins_build_number: 42
+                status: "completed"
+                triggered_by: 1
+                parameters: '{"branch": "main", "environment": "staging"}'
+                result: '{"status": "SUCCESS", "duration": 120000, "artifacts": ["report.html"]}'
+                created_at: "2024-01-15T10:30:00Z"
+                updated_at: "2024-01-15T10:32:00Z"
+                completed_at: "2024-01-15T10:32:00Z"
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        404:
+          description: 任务未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Task not found"
+      security:
+        - BearerAuth: []
+
+  /jobs:
+    get:
+      summary: 获取可用Jenkins任务列表
+      description: 获取当前可用的Jenkins任务列表
+      tags:
+        - Scan Tasks
+      responses:
+        200:
+          description: 成功获取任务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailableJobsResponse'
+              example:
+                jobs:
+                  - "security-scan-pipeline"
+                  - "code-quality-check"
+                  - "dependency-scan"
+                  - "infrastructure-scan"
+                count: 4
+        401:
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Could not validate credentials"
+        500:
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Failed to get available jobs: Jenkins server unreachable"
+      security:
+        - BearerAuth: []
