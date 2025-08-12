@@ -607,9 +607,11 @@
                 });
                 
                 if (response.ok) {
-                    const tasks = await response.json();
+                    const data = await response.json();
+                    // 从分页响应中提取实际的任务数组
+                    const tasks = data.items || [];
                     const taskList = document.getElementById('taskList');
-                    
+                    console.log(tasks);
                     if (tasks.length === 0) {
                         taskList.innerHTML = '<p>暂无任务</p>';
                         return;

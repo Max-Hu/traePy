@@ -37,11 +37,28 @@ def get_db() -> Session:
         db.close()
 
 def create_tables():
-    """创建数据库表"""
+    """创建数据库表（仅创建不存在的表）"""
     try:
         from app.models.database import Base
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
+        from sqlalchemy import inspect
+        
+        # 获取数据库检查器
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        
+        # 记录将要创建的表
+        tables_to_create = []
+        for table_name, table in Base.metadata.tables.items():
+            if table_name not in existing_tables:
+                tables_to_create.append(table_name)
+        
+        if tables_to_create:
+            logger.info(f"Creating tables: {', '.join(tables_to_create)}")
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+        else:
+            logger.info("All tables already exist, skipping creation")
+            
     except Exception as e:
         logger.error(f"Failed to create database tables: {str(e)}")
         raise
