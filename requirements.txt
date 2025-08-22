@@ -1,45 +1,15 @@
-# Web framework - using version ranges instead of fixed versions
-fastapi>=0.116.0,<0.117.0
-uvicorn>=0.31.0,<0.32.0
-pydantic>=2.7.0,<3.0.0
-pydantic-settings>=2.0.0,<3.0.0
-
-# GraphQL support
-graphene>=3.2.0,<3.3.0
-strawberry-graphql>=0.220.0,<0.221.0
-
-# Database driver - current version range is already good
-oracledb>=1.4.0,<2.0.0
-
-# HTTP client
-requests>=2.31.0,<3.0.0
-
-# Testing tools
-pytest>=8.0.0,<9.0.0
-pytest-cov>=4.1.0,<6.0.0
-
-# Utility libraries
-python-dotenv>=1.0.0,<2.0.0
-
-# WebSocket support
-websockets>=11.0.0,<12.0.0
-
-# JWT authentication related
-python-jose[cryptography]>=3.3.0,<4.0.0
-passlib[bcrypt]>=1.7.4,<2.0.0
-python-multipart>=0.0.6,<1.0.0
-
-# Database ORM
-sqlalchemy>=2.0.0,<3.0.0
-
-# Email validation
-email-validator>=2.0.0,<3.0.0
-
-# Asynchronous testing support
-pytest-asyncio>=0.21.0,<1.0.0
-
-# HTTP testing client
-httpx>=0.25.0,<1.0.0
-
-# Ensure cryptography package is available (resolves previous DPY-3016 error)
-cryptography>=3.4.8
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+pydantic==2.5.0
+pydantic-settings==2.1.0
+strawberry-graphql[fastapi]==0.215.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+requests==2.31.0
+cx-Oracle==8.3.0
+pytest==7.4.3
+pytest-asyncio==0.21.1
+apscheduler==3.10.4

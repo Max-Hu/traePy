@@ -7,7 +7,7 @@ import uuid
 Base = declarative_base()
 
 class User(Base):
-    """用户模型"""
+    """User model"""
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -18,11 +18,11 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # 关联关系
+    # Relationships
     scan_tasks = relationship("ScanTask", back_populates="triggered_by_user")
 
 class ScanTask(Base):
-    """扫描任务模型"""
+    """Scan task model"""
     __tablename__ = "scan_tasks"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -31,17 +31,17 @@ class ScanTask(Base):
     jenkins_build_number = Column(Integer, nullable=True)
     status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed
     triggered_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    parameters = Column(Text, nullable=True)  # JSON格式的参数
-    result = Column(Text, nullable=True)  # JSON格式的结果
+    parameters = Column(Text, nullable=True)  # JSON format parameters
+    result = Column(Text, nullable=True)  # JSON format result
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     
-    # 关联关系
+    # Relationships
     triggered_by_user = relationship("User", back_populates="scan_tasks")
 
 class WebSocketConnection(Base):
-    """WebSocket连接记录模型"""
+    """WebSocket connection record model"""
     __tablename__ = "websocket_connections"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -51,5 +51,26 @@ class WebSocketConnection(Base):
     connected_at = Column(DateTime, default=datetime.utcnow)
     disconnected_at = Column(DateTime, nullable=True)
     
-    # 关联关系
+    # Relationships
     user = relationship("User")
+
+class MonitorTask(Base):
+    """Third-party service monitoring task model"""
+    __tablename__ = "monitor_tasks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
+    service_name = Column(String(100), nullable=False)  # Third-party service name
+    job_id = Column(String(100), nullable=False)  # Third-party service job ID
+    monitor_url = Column(String(500), nullable=False)  # GET request URL for monitoring
+    status = Column(String(20), default="monitoring", index=True)  # monitoring, success, failed, timeout
+    result = Column(Text, nullable=True)  # JSON format final result
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    timeout_at = Column(DateTime, nullable=False)  # Timeout time after 30 minutes
+    
+    # Monitoring configuration
+    check_interval = Column(Integer, default=30)  # Check interval in seconds
+    success_conditions = Column(Text, nullable=True)  # JSON format success conditions
+    failure_conditions = Column(Text, nullable=True)  # JSON format failure conditions
