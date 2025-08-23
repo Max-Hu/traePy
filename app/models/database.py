@@ -63,7 +63,7 @@ class MonitorTask(Base):
     service_name = Column(String(100), nullable=False)  # Third-party service name
     job_id = Column(String(100), nullable=False)  # Third-party service job ID
     monitor_url = Column(String(500), nullable=False)  # GET request URL for monitoring
-    status = Column(String(20), default="monitoring", index=True)  # monitoring, success, failed, timeout
+    status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed, timeout
     result = Column(Text, nullable=True)  # JSON format final result
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -74,3 +74,9 @@ class MonitorTask(Base):
     check_interval = Column(Integer, default=30)  # Check interval in seconds
     success_conditions = Column(Text, nullable=True)  # JSON format success conditions
     failure_conditions = Column(Text, nullable=True)  # JSON format failure conditions
+    
+    # Multi-instance support fields
+    assigned_instance = Column(String(100), nullable=True, index=True)  # Instance ID handling this task
+    last_heartbeat = Column(DateTime, nullable=True, index=True)  # Last heartbeat timestamp
+    retry_count = Column(Integer, default=0)  # Number of retries
+    max_retries = Column(Integer, default=3)  # Maximum retry attempts
